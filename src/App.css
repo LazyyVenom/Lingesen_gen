@@ -1,86 +1,87 @@
 #root {
-  max-width: 1200px;
+  max-width: 960px;
   margin: 0 auto;
+  padding: 24px;
 }
 
 .app {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.row {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.row.actions {
-  margin-top: 8px;
-}
-
-.row.preview {
-  align-items: flex-start;
-}
-
-.col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.card {
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 16px;
-  background: #ffffff;
-  min-width: 280px;
-}
-
-.btn {
-  padding: 10px 16px;
-  border-radius: 10px;
-  border: 1px solid #111111;
-  background: #111111;
-  color: #ffffff;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.btn:hover:not(:disabled) {
-  background: #000000;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-canvas {
-  width: 520px;
-  height: 390px;
-  border: 1px dashed #aaaaaa;
-  border-radius: 8px;
-  background: #f9fafb;
-  max-width: 100%;
-}
-
-label {
-  font-weight: 600;
-}
-
-small.code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
-  color: #555555;
-}
-
-.app > p {
-  margin: 0;
-  max-width: 860px;
+  gap: 20px;
+  color: #0a0a0a;
 }
 
 .app h1 {
   margin: 0;
+  font-size: 2rem;
+}
+
+.app p {
+  margin: 0;
+}
+
+.upload-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 2px dashed #333333;
+  border-radius: 12px;
+  background: #f4f4f4;
+  max-width: 420px;
+}
+
+.upload-card input {
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.status {
+  font-style: italic;
+  color: #444444;
+}
+
+.error {
+  color: #b00020;
+  font-weight: 600;
+}
+
+.warning {
+  color: #b36b00;
+  font-weight: 600;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  min-height: 360px;
+  border: 1px solid #dadada;
+  border-radius: 16px;
+  background: #f4f4f4;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #101010;
+}
+
+@media (max-width: 640px) {
+  #root {
+    padding: 16px;
+  }
+
+  .upload-card {
+    width: 100%;
+  }
+
+  .stage {
+    min-height: 260px;
+  }
 }
