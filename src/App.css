@@ -1,42 +1,86 @@
 #root {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.row.actions {
+  margin-top: 8px;
+}
+
+.row.preview {
+  align-items: flex-start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .card {
-  padding: 2em;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ffffff;
+  min-width: 280px;
 }
 
-.read-the-docs {
-  color: #888;
+.btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #111111;
+  background: #111111;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: #000000;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+canvas {
+  width: 520px;
+  height: 390px;
+  border: 1px dashed #aaaaaa;
+  border-radius: 8px;
+  background: #f9fafb;
+  max-width: 100%;
+}
+
+label {
+  font-weight: 600;
+}
+
+small.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  color: #555555;
+}
+
+.app > p {
+  margin: 0;
+  max-width: 860px;
+}
+
+.app h1 {
+  margin: 0;
 }
