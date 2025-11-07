@@ -29,19 +29,36 @@ const KEYPOINT_RIGHT_EYE = 263;
 const KEYPOINT_NOSE = 1;
 
 const HERO_FACE_TUNING = {
-  hero1: { maskScale: 0.85, clipScale: 1.06 },
-  hero2: { maskScale: 0.82, clipScale: 1.02 },
+  hero1: {
+    maskScale: 1.65,
+    clipScale: 2.1,
+    scale: 2.3,
+    offsetX: 0,
+    offsetY: 0,
+    removeOriginal: true,
+  },
+  hero2: {
+    removeOriginal: false,
+  },
 };
-const DEFAULT_FACE_TUNING = { maskScale: 0.9, clipScale: 1.04 };
-const FACE_CLIP_SCALE = 1.28;
+const DEFAULT_FACE_TUNING = {
+  maskScale: 1.3,
+  clipScale: 1.5,
+  scale: 1.6,
+  offsetX: 0,
+  offsetY: 0,
+  removeOriginal: true,
+};
 
 const TIMINGS = {
-  VILLAIN_START: 600,
-  VILLAIN_DURATION: 1400,
-  MED_START: 1600,
-  MED_DURATION: 1100,
-  HERO2_START: 3200,
-  TOTAL: 3800,
+  DOCTOR_START: 600,
+  DOCTOR_DURATION: 1400,
+  MED_START: 1800,
+  MED_DURATION: 800,
+  HERO1_FADEOUT: 2600,
+  FADEOUT_DURATION: 400,
+  HERO2_START: 3000,
+  TOTAL: 3500,
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -178,7 +195,7 @@ const prepareFaceData = (image, face) => {
 
   const xs = validMesh.map((pt) => pt.x);
   const ys = validMesh.map((pt) => pt.y);
-  const pad = Math.max(20, Math.round(Math.max(w, h) * 0.06));
+  const pad = Math.max(50, Math.round(Math.max(w, h) * 0.18));
 
   let minX = Math.max(0, Math.floor(Math.min(...xs) - pad));
   let maxX = Math.min(w, Math.ceil(Math.max(...xs) + pad));
@@ -207,52 +224,15 @@ const prepareFaceData = (image, face) => {
 
   ctx.save();
   ctx.translate(-minX, -minY);
-  let clipMeta = null;
   if (ovalPts.length >= 6) {
-    const clipPts = expandPolygon(ovalPts, FACE_CLIP_SCALE);
-    const translatedPts = clipPts.map((pt) => ({
+    const clipPts = expandPolygon(ovalPts, 1.5).map((pt) => ({
       x: pt.x - minX,
       y: pt.y - minY,
     }));
-    facePath(ctx, translatedPts);
+    facePath(ctx, clipPts);
     ctx.clip();
-    const bounds = translatedPts.reduce(
-      (acc, pt) => ({
-        minX: Math.min(acc.minX, pt.x),
-        maxX: Math.max(acc.maxX, pt.x),
-        minY: Math.min(acc.minY, pt.y),
-        maxY: Math.max(acc.maxY, pt.y),
-      }),
-      { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
-    );
-    const center = {
-      x: (bounds.minX + bounds.maxX) / 2,
-      y: (bounds.minY + bounds.maxY) / 2,
-    };
-    const radius =
-      (Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) / 2) *
-      1.1;
-    clipMeta = { center, radius };
   }
   ctx.drawImage(image, 0, 0);
-  if (clipMeta) {
-    ctx.save();
-    ctx.globalCompositeOperation = "destination-in";
-    const gradient = ctx.createRadialGradient(
-      clipMeta.center.x,
-      clipMeta.center.y,
-      clipMeta.radius * 0.6,
-      clipMeta.center.x,
-      clipMeta.center.y,
-      clipMeta.radius
-    );
-    gradient.addColorStop(0, "rgba(0,0,0,1)");
-    gradient.addColorStop(0.7, "rgba(0,0,0,1)");
-    gradient.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-  }
   ctx.restore();
 
   const fetchPoint = (index) => {
@@ -277,9 +257,12 @@ const detectPrimaryFace = async (human, image) => {
 };
 
 const drawContainIntoBox = (ctx, img, box) => {
-  const ratio = Math.min(box.width / img.width, box.height / img.height);
-  const dw = img.width * ratio;
-  const dh = img.height * ratio;
+  const imgWidth = img.naturalWidth || img.width;
+  const imgHeight = img.naturalHeight || img.height;
+  if (!imgWidth || !imgHeight) return;
+  const ratio = Math.min(box.width / imgWidth, box.height / imgHeight);
+  const dw = imgWidth * ratio;
+  const dh = imgHeight * ratio;
   const dx = box.x + (box.width - dw) / 2;
   const dy = box.y + (box.height - dh) / 2;
   ctx.save();
@@ -290,14 +273,8 @@ const drawContainIntoBox = (ctx, img, box) => {
 };
 
 const computeLayout = (width, height, villainImg, medImg) => {
-  const hero1Box = {
-    x: width * 0.08,
-    y: height * 0.18,
-    width: width * 0.34,
-    height: height * 0.68,
-  };
-  const hero2Box = {
-    x: width * 0.58,
+  const centerHeroBox = {
+    x: width * 0.33,
     y: height * 0.18,
     width: width * 0.34,
     height: height * 0.68,
@@ -316,21 +293,21 @@ const computeLayout = (width, height, villainImg, medImg) => {
   const medHeight = medWidth * medRatio;
 
   return {
-    hero1Box,
-    hero2Box,
-    villain: {
+    hero1Box: centerHeroBox,
+    hero2Box: centerHeroBox,
+    doctor: {
       width: villainWidth,
       height: villainHeight,
-      startX: -villainWidth - width * 0.1,
-      targetX: hero1Box.x + hero1Box.width * 0.05,
-      y: hero1Box.y + hero1Box.height - villainHeight,
+      startX: width + villainWidth * 0.1,
+      targetX: centerHeroBox.x + centerHeroBox.width + width * 0.05,
+      y: centerHeroBox.y + centerHeroBox.height - villainHeight,
     },
     med: {
       width: medWidth,
       height: medHeight,
-      x: hero1Box.x + hero1Box.width * 0.45,
-      startY: -medHeight - height * 0.15,
-      targetY: hero1Box.y + hero1Box.height * 0.25,
+      startX: width + medWidth * 0.1,
+      targetX: centerHeroBox.x + centerHeroBox.width * 0.5,
+      y: centerHeroBox.y + centerHeroBox.height * 0.3,
     },
   };
 };
@@ -404,9 +381,12 @@ function App() {
     if (!left || !right || !nose) return canvas;
 
     const heroOval = FACE_OVAL.map((index) => mesh[index]).filter(Boolean);
-    const tuning = HERO_FACE_TUNING[key] ?? DEFAULT_FACE_TUNING;
+    const tuning = {
+      ...DEFAULT_FACE_TUNING,
+      ...HERO_FACE_TUNING[key],
+    };
 
-    if (heroOval.length) {
+    if (heroOval.length && tuning.removeOriginal) {
       const expanded = expandPolygon(heroOval, tuning.maskScale);
       ctx.save();
       ctx.globalCompositeOperation = "destination-out";
@@ -426,7 +406,7 @@ function App() {
     );
 
     ctx.save();
-    if (heroOval.length) {
+    if (heroOval.length && tuning.clipScale) {
       const clipShape = expandPolygon(heroOval, tuning.clipScale);
       facePath(ctx, clipShape);
       ctx.clip();
@@ -444,6 +424,9 @@ function App() {
       matrix[4],
       matrix[5]
     );
+    if (tuning.offsetX || tuning.offsetY) {
+      ctx.translate(tuning.offsetX || 0, tuning.offsetY || 0);
+    }
     ctx.drawImage(faceData.canvas, 0, 0);
     ctx.restore();
 
@@ -463,31 +446,46 @@ function App() {
 
     if (!heroes.hero1) return;
 
-    drawContainIntoBox(ctx, heroes.hero1, layout.hero1Box);
+    // Draw hero1 with fade out effect
+    if (elapsed < TIMINGS.HERO2_START) {
+      ctx.save();
+      if (elapsed >= TIMINGS.HERO1_FADEOUT) {
+        const fadeProgress = clamp(
+          (elapsed - TIMINGS.HERO1_FADEOUT) / TIMINGS.FADEOUT_DURATION,
+          0,
+          1
+        );
+        ctx.globalAlpha = 1 - fadeProgress;
+      }
+      drawContainIntoBox(ctx, heroes.hero1, layout.hero1Box);
+      ctx.restore();
+    }
 
+    // Doctor slides in from right
     if (
-      elapsed >= TIMINGS.VILLAIN_START &&
+      elapsed >= TIMINGS.DOCTOR_START &&
       elapsed < TIMINGS.HERO2_START &&
       villain
     ) {
       const progress = clamp(
-        (elapsed - TIMINGS.VILLAIN_START) / TIMINGS.VILLAIN_DURATION,
+        (elapsed - TIMINGS.DOCTOR_START) / TIMINGS.DOCTOR_DURATION,
         0,
         1
       );
       const eased = easeOutCubic(progress);
       const x =
-        layout.villain.startX +
-        (layout.villain.targetX - layout.villain.startX) * eased;
+        layout.doctor.startX +
+        (layout.doctor.targetX - layout.doctor.startX) * eased;
       ctx.drawImage(
         villain,
         x,
-        layout.villain.y,
-        layout.villain.width,
-        layout.villain.height
+        layout.doctor.y,
+        layout.doctor.width,
+        layout.doctor.height
       );
     }
 
+    // Med moves from doctor to hero1
     if (elapsed >= TIMINGS.MED_START && elapsed < TIMINGS.HERO2_START && med) {
       const progress = clamp(
         (elapsed - TIMINGS.MED_START) / TIMINGS.MED_DURATION,
@@ -495,17 +493,18 @@ function App() {
         1
       );
       const eased = easeInOutQuad(progress);
-      const y =
-        layout.med.startY + (layout.med.targetY - layout.med.startY) * eased;
+      const x =
+        layout.med.startX + (layout.med.targetX - layout.med.startX) * eased;
       ctx.drawImage(
         med,
-        layout.med.x - layout.med.width / 2,
-        y,
+        x - layout.med.width / 2,
+        layout.med.y,
         layout.med.width,
         layout.med.height
       );
     }
 
+    // Hero2 appears in center after hero1 fades
     if (elapsed >= TIMINGS.HERO2_START && heroes.hero2) {
       drawContainIntoBox(ctx, heroes.hero2, layout.hero2Box);
     }
@@ -577,7 +576,8 @@ function App() {
         if (latestFaceRef.current) {
           const faceData = latestFaceRef.current;
           compositesRef.current.hero1 = buildHeroComposite("hero1", faceData);
-          compositesRef.current.hero2 = buildHeroComposite("hero2", faceData);
+          compositesRef.current.hero2 =
+            heroDataRef.current.hero2?.image ?? null;
           drawFrame(0);
           setHasFace(true);
         }
@@ -616,11 +616,10 @@ function App() {
       latestFaceRef.current = faceData;
 
       const hero1Composite = buildHeroComposite("hero1", faceData);
-      const hero2Composite = buildHeroComposite("hero2", faceData);
       if (!hero1Composite) throw new Error("Failed to align face with hero 1.");
 
       compositesRef.current.hero1 = hero1Composite;
-      compositesRef.current.hero2 = hero2Composite;
+      compositesRef.current.hero2 = heroDataRef.current.hero2?.image ?? null;
       setHasFace(true);
       startSequence();
     } catch (err) {
