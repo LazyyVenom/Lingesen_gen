@@ -56,9 +56,11 @@ const TIMINGS = {
   MED_START: 1800,
   MED_DURATION: 800,
   HERO1_FADEOUT: 2600,
-  FADEOUT_DURATION: 400,
-  HERO2_START: 3000,
-  TOTAL: 3500,
+  FADEOUT_DURATION: 600,
+  HERO2_FADEIN: 2800,
+  FADEIN_DURATION: 600,
+  HERO2_START: 2800,
+  TOTAL: 3800,
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -447,7 +449,7 @@ function App() {
     if (!heroes.hero1) return;
 
     // Draw hero1 with fade out effect
-    if (elapsed < TIMINGS.HERO2_START) {
+    if (elapsed < TIMINGS.HERO2_FADEIN + TIMINGS.FADEIN_DURATION) {
       ctx.save();
       if (elapsed >= TIMINGS.HERO1_FADEOUT) {
         const fadeProgress = clamp(
@@ -455,7 +457,8 @@ function App() {
           0,
           1
         );
-        ctx.globalAlpha = 1 - fadeProgress;
+        const easedFade = easeInOutQuad(fadeProgress);
+        ctx.globalAlpha = 1 - easedFade;
       }
       drawContainIntoBox(ctx, heroes.hero1, layout.hero1Box);
       ctx.restore();
@@ -504,9 +507,18 @@ function App() {
       );
     }
 
-    // Hero2 appears in center after hero1 fades
-    if (elapsed >= TIMINGS.HERO2_START && heroes.hero2) {
+    // Hero2 appears in center with fade in effect
+    if (elapsed >= TIMINGS.HERO2_FADEIN && heroes.hero2) {
+      ctx.save();
+      const fadeProgress = clamp(
+        (elapsed - TIMINGS.HERO2_FADEIN) / TIMINGS.FADEIN_DURATION,
+        0,
+        1
+      );
+      const easedFade = easeInOutQuad(fadeProgress);
+      ctx.globalAlpha = easedFade;
       drawContainIntoBox(ctx, heroes.hero2, layout.hero2Box);
+      ctx.restore();
     }
   };
 
